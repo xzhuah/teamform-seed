@@ -175,7 +175,7 @@ teamapp.directive('eventCard', function($compile) {
         restrict:"E",
         templateUrl: 'zhuxinyu/js/components/eventCard/eventCard.html',
         replace:true,
-        controller: function($rootScope,$scope, $element,$firebaseObject){
+        controller: function($rootScope,$scope, $element,$firebaseObject,$firebaseArray){
 
             $scope.eventPicture="zhuxinyu/img/load"+Math.ceil(Math.random()*5)+".gif";
 
@@ -201,14 +201,18 @@ teamapp.directive('eventCard', function($compile) {
                 }catch(err){
                     team.member=0;
                 }
+                console.log($scope.element.allTeams[index]);
+
                  var leaderName=$firebaseObject(firebase.database().ref("users").child($scope.element.allTeams[index].leader).child("name"));
                   leaderName.$loaded().then(function(data){
                         team.leader=data.$value;
-
+                        console.log(team.leader);
                         var teamName=$firebaseObject(firebase.database().ref("teams").child($scope.element.allTeams[index].teamID).child('teamName'));
                         teamName.$loaded().then(function(data2){
                             team.teamName=data2.$value;
+                            console.log(team.teamName);
                              $scope.Teams.push(team);
+                              console.log($scope.Teams);
                              if(index<$scope.element.allTeams.length-1){
                                 $scope.getTeamInfo(index+1);
                              }
@@ -228,10 +232,29 @@ teamapp.directive('eventCard', function($compile) {
 
                 if(!$scope.Teams){
                     $scope.Teams=[];
+                    console.log($scope.element.allTeams);
                     if(!$scope.element.allTeams){
                         return;
                     }
+                    if($scope.element.allTeams.length==null){
+                        console.log("Only one");
+
+                        var x=[]
+                        $.each($scope.element.allTeams, function(i,n) {
+                            x.push(n);});
+                        $scope.element.allTeams=x;
+
+
+
+                        console.log(x);
+                      
+                      
+                    }
+                     console.log($scope.element.allTeams.length);
+                     console.log($scope.element.allTeams);
                     if($scope.element.allTeams.length>0){
+                       // return;
+                        //
                         $scope.getTeamInfo(0);//The recursive function
                     }
                 }
@@ -241,11 +264,15 @@ teamapp.directive('eventCard', function($compile) {
                 var el = $compile("<event-card eid="+cardInfo.$id+"></event-card>")($scope);
                 $("#eventCardList").prepend(el);
 
+
             };
             $scope.goToEvent =function(){
-                $rootScope.clickedEvent=$scope.element;
 
-
+                $rootScope.users=$firebaseArray($rootScope.user_ref);
+                $rootScope.events=$firebaseArray($rootScope.event_ref);
+                $rootScope.teams=$firebaseArray($rootScope.team_ref);
+                $rootScope.events.$loaded().then(function(data){
+                    $rootScope.clickedEvent=$scope.element;
                     console.log($scope.element);
                     console.log($rootScope.currentUser.$id);
 
@@ -266,10 +293,7 @@ teamapp.directive('eventCard', function($compile) {
                     if(!$scope.element.allTeams) $scope.element.allTeams=[];
 
                     if(!$scope.element.allTeams.length){
-                        var x=[]
-                        $.each($scope.element.allTeams, function(i,n) {
-                            x.push(n);});
-                        $scope.element.allTeams=x;
+                        
                     }
 
                     for(var i=0;i<$scope.element.allTeams.length;i++){
@@ -308,8 +332,11 @@ teamapp.directive('eventCard', function($compile) {
                         $(window).scrollTop(0);
                     }
                 }
+                });
 
-            }
+              
+
+            };
 
         }
 
@@ -489,9 +516,9 @@ teamapp.directive('teamCard',function(){
 
                     var leaderSkill=$firebaseArray(firebase.database().ref("users").child($scope.element.leaderID).child("skills"));
                     leaderSkill.$loaded().then(function(data2){
-                        console.log(data2)
+                        console.log(data2);
                         for(var i=0;i<data2.length;i++){
-                            if($scope.map[(""+data2[i].$value).toLowerCase()]){
+                            if($scope.map[(""+data2[i].$value).toLowerCase()]!=null){
                                 $scope.map[(""+data2[i].$value).toLowerCase()]=$scope.map[(""+data2[i].$value).toLowerCase()]+1;
                             }
                         }
@@ -503,12 +530,21 @@ teamapp.directive('teamCard',function(){
 
                 });
                 $scope.goToTeam=function(){
-                    if($scope.invited){
+
+                    $rootScope.users=$firebaseArray($rootScope.user_ref);
+                    $rootScope.events=$firebaseArray($rootScope.event_ref);
+                    $rootScope.teams=$firebaseArray($rootScope.team_ref);
+
+                    $rootScope.users.$loaded().then(function(data){
+                        console.log(data);
+
+                     if($scope.invited){
 
                     }else{
                         if($rootScope.currentUser.$id==$scope.element.leaderID){
                             //Team leader
                              $rootScope.clickedEvent.$id=$scope.element.belongstoEvent;
+                             console.log($rootScope.clickedEvent.$id);
                               window.location.href = '#/teamleader';
                              return;
                         }else{
@@ -522,7 +558,9 @@ teamapp.directive('teamCard',function(){
                             }
                         }
                     }
-                }
+                    });
+                   
+                };
                 $scope.countMember=function(index){
                     if(!$scope.element.membersID){
                         $scope.element.membersID=[];
@@ -542,7 +580,7 @@ teamapp.directive('teamCard',function(){
 
                             Skill.$loaded().then(function(data){
                             for(var i=0;i<data.length;i++){
-                                if($scope.map[(""+data[i].$value).toLowerCase()]){
+                                if($scope.map[(""+data[i].$value).toLowerCase()]!=null){
 
                                     $scope.map[(""+data[i].$value).toLowerCase()]=$scope.map[(""+data[i].$value).toLowerCase()]+1;
 
@@ -603,12 +641,16 @@ teamapp.directive('teamSkill',function(){
 
                     var leaderSkill=$firebaseArray(firebase.database().ref("users").child($scope.element.leaderID).child("skills"));
                     leaderSkill.$loaded().then(function(data2){
-                        console.log(data2)
+                       
                         for(var i=0;i<data2.length;i++){
-                            if($scope.map[(""+data2[i].$value).toLowerCase()]){
+                           
+                            if($scope.map[(""+data2[i].$value).toLowerCase()]!=null){
                                 $scope.map[(""+data2[i].$value).toLowerCase()]=$scope.map[(""+data2[i].$value).toLowerCase()]+1;
                             }
                         }
+                        console.log("Counting leader");
+
+                         console.log($scope.map);
 
                         $scope.countMember(0);
                     });
@@ -617,7 +659,12 @@ teamapp.directive('teamSkill',function(){
 
                 });
                 $scope.goToTeam=function(){
-                    if($scope.invited){
+
+                $rootScope.users=$firebaseArray($rootScope.user_ref);
+                $rootScope.events=$firebaseArray($rootScope.event_ref);
+                $rootScope.teams=$firebaseArray($rootScope.team_ref);
+                $rootScope.teams.$loaded().then(function(data){
+                if($scope.invited){
 
                     }else{
                         if($rootScope.currentUser.$id==$scope.element.leaderID){
@@ -636,7 +683,11 @@ teamapp.directive('teamSkill',function(){
                             }
                         }
                     }
-                }
+                
+    });
+}
+
+                
                 $scope.countMember=function(index){
                     if(!$scope.element.membersID){
                         $scope.element.membersID=[];
@@ -656,7 +707,7 @@ teamapp.directive('teamSkill',function(){
 
                             Skill.$loaded().then(function(data){
                             for(var i=0;i<data.length;i++){
-                                if($scope.map[(""+data[i].$value).toLowerCase()]){
+                                if($scope.map[(""+data[i].$value).toLowerCase()]!=null){
 
                                     $scope.map[(""+data[i].$value).toLowerCase()]=$scope.map[(""+data[i].$value).toLowerCase()]+1;
 
@@ -682,6 +733,7 @@ teamapp.directive('teamSkill',function(){
                         ];
                         $scope.imageUrl=$scope.element.imageUrl;
                         console.log($scope.data);
+                         console.log($scope.map);
                     }
                 }
 
